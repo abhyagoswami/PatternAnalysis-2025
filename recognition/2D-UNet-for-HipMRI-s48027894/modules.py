@@ -70,7 +70,7 @@ class ResidualBlock(nn.Module):
     
 class UpBlock(nn.Module):
     """
-    A simple upsampling block using transposed convolution.
+    A simple upsampling block using bilinear upsampling followed by a residual block.
     It performs an upsample (bilinear) followed by concatenation (skip connection), 
     then the pre-activation residual block.
     """
@@ -78,7 +78,7 @@ class UpBlock(nn.Module):
         super().__init__()
         # We use a scale factor of 2 because we want to double the spatial dimensions
         # The 'bilinear' mode provides smooth upsampling
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
         # After upsampling, we concatenate the skip connection channels
         self.fuse = ResidualBlock(in_channels + skip_channels, out_channels, dropout_prob)
 
@@ -92,15 +92,16 @@ class UpBlock(nn.Module):
             - output tensor of shape (N, C_out, H*2, W*2)
         """
         x = self.upsample(x) # Upsample the input
-        # If spatial sizes differ due to rounding, we crop the skip connection to match
+        # If spatial sizes differ due by 1 pixel, we pad x to match the skip's size
         if x.shape[2:] != skip.shape[2:]:
             # Center crop the skip connection and pad if necessary
             diff_y = skip.size(-2) - x.size(-2) # Difference in height
             diff_x = skip.size(-1) - x.size(-1) # Difference in width
             # Pad with differences divided equally on both sides
             x = F.pad(x, [diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2])
-            x = torch.cat([x, skip], dim=1) # Concatenate along channel dimension
-            return self.fuse(x)
+        
+        x = torch.cat([x, skip], dim=1) # Concatenate along channel dimension
+        return self.fuse(x)
         
 class ImprovedUNet(nn.Module):
     """
@@ -118,7 +119,7 @@ class ImprovedUNet(nn.Module):
         Parameters:
             - in_channels: number of input channels (default 1 for grayscale MRI)
             - out_channels: number of output channels (default 1 for binary segmentation)
-            - base_filters: number of filters in the first layer (default 32)
+            - base_channels: number of channels in the first layer (default 32)
             - dropout_prob: dropout probability in residual blocks (default 0.2)
             - deep_supervision: whether to use deep supervision heads (default True)
         """
@@ -140,6 +141,9 @@ class ImprovedUNet(nn.Module):
         self.up3 = UpBlock(base_channels * 8, base_channels * 4, base_channels * 4, dropout_prob) # 256 + 128 to 128
         self.up2 = UpBlock(base_channels * 4, base_channels * 2, base_channels * 2, dropout_prob) # 128 + 64 to 64
         self.up1 = UpBlock(base_channels * 2, base_channels, base_channels, dropout_prob) # 64 + 32 to 32
+
+        # Main output head
+        self.out_head = nn.Conv2d(base_channels, out_channels, kernel_size=1) # from 32 to 1
 
         # Heads for deep supervision outputs
         # This allows the model to make predictions at multiple scales, allowing earlier layers to learn useful features
