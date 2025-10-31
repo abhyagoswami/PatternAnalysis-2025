@@ -3,7 +3,7 @@
 This project tackles binary prostate segmentation from 2D Hip MRI slices in the nifti format. 
 It emplements an **improved U-Net** that adds pre activation residual blocks, InstanceNorm, Dropout in 20% cases, and optional deep supervision to the classic U-Net encoder decoder structure.
 
-The goal is to get accuracye pizel-wise segmentation masks for the prostate which are evaluated by Dice similarity score.
+The goal is to get accurate pixel-wise segmentation masks for the prostate which are evaluated by Dice similarity score.
 For visualisation, losses.png plots train/validation loss and dice.png plots validation dice score.
 
 ## 2 Algorithm
