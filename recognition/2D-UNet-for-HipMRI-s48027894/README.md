@@ -29,7 +29,7 @@ Thus, we successfully reach and surpass the threshold of >=0.75 Dice on test set
 Though we have 10 epochs in the loop, an early stop is enforced when the validation Dice is >0.98, which occurred at 5 epochs (see end of this README for logs). 
 
 
-## 4 Data Layout 
+## 4 Data Layout x
 The expected disk data layout is:
 
 HipMRI_2D/
@@ -85,3 +85,7 @@ Validation Dice reached 0.98, stopping training early.
 TEST | loss=0.0393 | dice=0.9836
 Saved final model to improved_unet_last.pt
 Saved plots to losses.png and dice.png
+
+## 8 AI Declaration
+Microsoft Copilot's autocomplete feature was used to assist with writing and debugging code.
+OpenAI's ChatGPT-5 was used to generate certain functions (these are declared in comments), inlcuding the main function in train.py, and pick_indices and save_overlay in predict.py.
